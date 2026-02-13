@@ -65,7 +65,9 @@ int CreateWindow(Display** mainDisplay, Window* mainWindow) {
 int main() {
 	Log("Running");
 
+	// The main display the window is on
 	Display* mainDisplay;
+	// The actual window item we are rendering to
 	Window mainWindow; 
 	int result = CreateWindow(&mainDisplay, &mainWindow);
 	if (result != 0) {
@@ -77,7 +79,7 @@ int main() {
 	Log("DefaultScreen");
 	int screen = DefaultScreen(mainDisplay);
 	Log("XSelectInput");
-	XSelectInput(mainDisplay, mainWindow, ExposureMask | KeyPressMask);
+	XSelectInput(mainDisplay, mainWindow, ExposureMask | StructureNotifyMask | KeyPressMask);
 
 
 	// Show the window to users
@@ -86,10 +88,13 @@ int main() {
 
 
 	Log("Default GC");
+	// The display's garbage collector
 	GC gc = DefaultGC(mainDisplay, screen);
 
 
 	// Setup the frame buffer
+
+	// the attributes of the window
 	XWindowAttributes windowAttrs;
 	Log("XGetWindowAttributes");
 	XGetWindowAttributes(mainDisplay, mainWindow, &windowAttrs);
@@ -98,6 +103,7 @@ int main() {
 	uint32_t* framebuffer = new uint32_t[windowAttrs.height * windowAttrs.width];
 
 	Log("XCreateImage");
+	// The image that is being drawn onto screen
 	XImage* image = XCreateImage(
 		mainDisplay, 
 		DefaultVisual(mainDisplay, screen),
@@ -114,6 +120,7 @@ int main() {
 
 	Log("Starting Loop");
 
+	// Is the window running or not
 	bool running = true;
 
 	while(running) {
@@ -121,14 +128,51 @@ int main() {
 		XNextEvent(mainDisplay, &generalEvent); // wait for the next event
 
 		switch(generalEvent.type) {
+			// Attributes of the window changed
+			case ConfigureNotify: {
+				XConfigureEvent* cfg = (XConfigureEvent*)&generalEvent;
+				
+				// If the size has not changed
+				if (cfg->width == windowAttrs.width && cfg->height == windowAttrs.height) break;
+
+				// If the size has changed
+				// Change winAttrs dimensions
+				windowAttrs.width = cfg->width;
+				windowAttrs.height = cfg->height;
+
+				// Destroy old
+				if (framebuffer) {
+					delete[] framebuffer;
+				}
+				if (image) {
+					image->data = nullptr;
+					XDestroyImage(image);
+				}
+
+				// Allocate new
+				framebuffer = new uint32_t[windowAttrs.width * windowAttrs.height];
+
+				// Update XImage
+				image = XCreateImage(
+					mainDisplay, 
+					DefaultVisual(mainDisplay, screen),
+					DefaultDepth(mainDisplay, screen),
+					ZPixmap, // format
+					0,
+					reinterpret_cast<char*>(framebuffer),
+					windowAttrs.width,
+					windowAttrs.height,
+					32, // Color Depth (32 bits each pixel)
+					0
+				);
+			}
+
+			// Window needs to be redrawn
 			case Expose:
 				result = Draw(framebuffer, windowAttrs);
 				if (result != 0) {
 					return 1;
 				}
-
-				image->width = windowAttrs.width;
-				image->height = windowAttrs.height;
 
 				XPutImage(
 					mainDisplay, mainWindow, gc, 
@@ -137,9 +181,10 @@ int main() {
 				);
 
 				break;
-
+			
+			// User pressed a key down
 			case KeyPress: {
-				XKeyPressedEvent *event = (XKeyPressedEvent *)&generalEvent;
+				XKeyPressedEvent* event = (XKeyPressedEvent*)&generalEvent;
 				if(event->keycode == XKeysymToKeycode(mainDisplay, XK_Escape)) {
 					running = false;
 				}
