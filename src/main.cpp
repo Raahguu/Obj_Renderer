@@ -57,6 +57,14 @@ int CreateWindow(Display** mainDisplay, Window* mainWindow) {
 		attributeValueMask, &windowAttributes
 	);
 
+	// Give the window a name and class
+	XClassHint classHint;
+	classHint.res_name = (char*)"obj renderer";
+	classHint.res_class = (char*)"Obj Renderer";
+
+	XSetClassHint(*mainDisplay, *mainWindow, &classHint);
+	XStoreName(*mainDisplay, *mainWindow, "Obj Renderer");
+
 	Log("Finished CreateWindow");
 
 	return 0;
