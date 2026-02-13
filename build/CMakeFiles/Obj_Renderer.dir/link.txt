@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/Obj_Renderer.dir/src/main.cpp.o -o Obj_Renderer  /usr/lib/x86_64-linux-gnu/libX11.so 

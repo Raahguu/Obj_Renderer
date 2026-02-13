@@ -1,0 +1,3 @@
+/home/raahguu/Desktop/gitstuff/Obj_Renderer/build/CMakeFiles/Obj_Renderer.dir
+/home/raahguu/Desktop/gitstuff/Obj_Renderer/build/CMakeFiles/edit_cache.dir
+/home/raahguu/Desktop/gitstuff/Obj_Renderer/build/CMakeFiles/rebuild_cache.dir
